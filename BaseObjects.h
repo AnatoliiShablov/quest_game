@@ -79,8 +79,8 @@ public:
     }
 };
 
-const symbol sky_block{0,0,' ',sky};
-const symbol cloud_block{0,0,'#',sky};
+const symbol sky_block{0, 0, ' ', sky};
+const symbol cloud_block{0, 0, '#', sky};
 
 template<typename InputIterator, bool B = true>
 void print(InputIterator first, InputIterator last, int32_t plus_x = 0, int32_t plus_y = 0) {
@@ -126,7 +126,7 @@ public:
         data_.emplace_back(4, 1, ' ');
         data_.emplace_back(5, 1, '/');
         data_.emplace_back(3, 2, ACS_URCORNER);
-        data_.emplace_back(4, 3, ' ');
+        data_.emplace_back(4, 2, ' ');
         data_.emplace_back(5, 4, ACS_ULCORNER);
 
         data_.emplace_back(0, 2, ACS_LLCORNER);
@@ -140,6 +140,11 @@ public:
             if (i < 3 || i > 5) data_.emplace_back(i, 2, ACS_HLINE);
             data_.emplace_back(i, height + 4, ' ');
             data_.emplace_back(i, height + 5, ACS_HLINE);
+        }
+
+        for (size_t i = 1; i < height + 3; i++) {
+            data_.emplace_back(0, i + 2, ACS_VLINE);
+            data_.emplace_back(length + 3, i + 2, ACS_VLINE);
         }
 
         for (size_t i = 1; i < length + 3; i++) {
@@ -172,7 +177,7 @@ public:
 
         data_.emplace_back(0, 0, ACS_LLCORNER);
         data_.emplace_back(0, height + 3, ACS_ULCORNER);
-        data_.emplace_back(length + 3, 2, ACS_LRCORNER);
+        data_.emplace_back(length + 3, 0, ACS_LRCORNER);
         data_.emplace_back(length + 3, height + 3, ACS_URCORNER);
 
 
@@ -181,6 +186,11 @@ public:
             data_.emplace_back(i, 0, ACS_HLINE);
             data_.emplace_back(i, height + 2, ' ');
             data_.emplace_back(i, height + 3, ACS_HLINE);
+        }
+
+        for (size_t i = 1; i < height + 3; i++) {
+            data_.emplace_back(0, i, ACS_VLINE);
+            data_.emplace_back(length + 3, i, ACS_VLINE);
         }
 
         for (size_t i = 1; i < length + 3; i++) {
@@ -199,7 +209,9 @@ public:
     sign(FILE *data_file) : static_object(data_file) {}
 };
 
-const sign to_talk{{"Press E to talk"}};
+struct npc_tag {
+};
+constexpr npc_tag npc_tag_o;
 
 class actor {
 protected:
@@ -207,13 +219,23 @@ protected:
     int32_t left_border_;
 public:
     actor() : left_border_(0) {
-        picture.emplace_back(0, 0, ACS_LRCORNER, leg_hand);
-        picture.emplace_back(0, 2, ACS_LLCORNER, leg_hand);
-        picture.emplace_back(1, 1, ACS_UARROW, leg_hand);
-        picture.emplace_back(1, 2, ACS_CKBOARD, body);
-        picture.emplace_back(0, 2, ACS_ULCORNER, leg_hand);
-        picture.emplace_back(2, 2, ACS_URCORNER, leg_hand);
-        picture.emplace_back(2, 3, ACS_DIAMOND, head);
+        picture.emplace_back(0, 0, ACS_LRCORNER | A_BOLD, leg_hand);
+        picture.emplace_back(2, 0, ACS_LLCORNER | A_BOLD, leg_hand);
+        picture.emplace_back(1, 1, ACS_UARROW | A_BOLD, leg_hand);
+        picture.emplace_back(1, 2, ACS_CKBOARD | A_BOLD, body);
+        picture.emplace_back(0, 2, ACS_ULCORNER | A_BOLD, leg_hand);
+        picture.emplace_back(2, 2, ACS_URCORNER | A_BOLD, leg_hand);
+        picture.emplace_back(1, 3, ACS_DIAMOND | A_BOLD, head);
+    }
+
+    actor(npc_tag) {
+        picture.emplace_back(0, 0, ACS_LRCORNER | A_BOLD, leg_hand);
+        picture.emplace_back(2, 0, ACS_LLCORNER | A_BOLD, leg_hand);
+        picture.emplace_back(1, 1, ACS_UARROW | A_BOLD, leg_hand);
+        picture.emplace_back(1, 2, ACS_CKBOARD | A_BOLD, body);
+        picture.emplace_back(0, 2, ACS_VLINE | A_BOLD, leg_hand);
+        picture.emplace_back(2, 2, ACS_VLINE | A_BOLD, leg_hand);
+        picture.emplace_back(1, 3, ACS_DIAMOND | A_BOLD, head);
     }
 
     void operator++() {
@@ -241,8 +263,7 @@ public:
     }
 
     void print(int32_t height, int32_t left) const {
-        ::print < std::vector<symbol>::const_iterator, false > (picture.cbegin(), picture.cend(),
-                left_border_ - left, height);
+        ::print(picture.cbegin(), picture.cend(), left_border_ - left, height);
     }
 };
 
@@ -253,38 +274,36 @@ class actor_npc : virtual public actor {
 
         info(FILE *actor_file) {
             uint32_t size;
-            std::fread(&current, sizeof(int32_t), 1, actor_file);
             std::fread(&size, sizeof(uint32_t), 1, actor_file);
-            next.resize(size);
-            std::fread(next.data(), sizeof(int32_t), size, actor_file);
+
+            if (size == 0) {
+                std::fread(&current, sizeof(int32_t), 1, actor_file);
+            } else {
+                next.resize(size);
+                std::fread(next.data(), sizeof(int32_t), size, actor_file);
+                current = 0;
+            }
         }
     };
 
     std::vector<std::pair<dialog_window, info>> logic;
     int32_t current_state;
 public:
-    actor_npc(FILE *actor_file) : current_state(EOD) {
+    actor_npc(FILE *actor_file) : actor(npc_tag_o), current_state(EOD) {
         std::fread(&left_border_, sizeof(int32_t), 1, actor_file);
-        picture.emplace_back(0, 0, ACS_LRCORNER, leg_hand);
-        picture.emplace_back(2, 0, ACS_LLCORNER, leg_hand);
-        picture.emplace_back(1, 1, ACS_UARROW, leg_hand);
-        picture.emplace_back(1, 2, ACS_CKBOARD, body);
-        picture.emplace_back(0, 2, ACS_VLINE, leg_hand);
-        picture.emplace_back(2, 2, ACS_VLINE, leg_hand);
-        picture.emplace_back(2, 3, ACS_DIAMOND, head);
         uint32_t size;
         std::fread(&size, sizeof(uint32_t), 1, actor_file);
         for (size_t i = 0; i < size; i++) {
-            logic.push_back(std::make_pair(dialog_window(actor_file), info(actor_file)));
+            logic.push_back({dialog_window(actor_file), info(actor_file)});
         }
 
     }
 
     int32_t tick(actions act) {
-        if (act == actions::action) {
+        if (act == actions::action && !logic.empty()) {
             if (current_state == EOD) {
                 current_state = 0;
-                logic[0].second.current = 0;
+                if (!logic[0].second.next.empty()) { logic[0].second.current = 0; }
             } else {
                 current_state = logic[current_state].second.next.empty() ?
                                 logic[current_state].second.current :
@@ -317,8 +336,15 @@ public:
 
     void print(int32_t height, int32_t left, actor const &player) const {
         actor::print(height, left);
-        if (close_to(player)) {
-            to_talk.print(black_board, height + 5, left_border() - left + 2);
+        if (current_state == EOD && !logic.empty() && close_to(player)) {
+            sign{{"Press E to talk"}}.print(black_board, left_border() - left - 8, height + 5);
+        }
+        if (current_state != EOD) {
+            logic[current_state].first.print(black_board, left_border() - left - 3, height + 5);
+            if (!logic[current_state].second.next.empty()) {
+                symbol(left_border() - left - 2, height + 10 - logic[current_state].second.current,
+                       ACS_RARROW, black_board).print();
+            }
         }
     }
 };

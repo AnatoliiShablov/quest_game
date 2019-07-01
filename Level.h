@@ -5,9 +5,10 @@
 #include <random>
 
 class Level {
-    std::vector<std::vector<symbol>> map;
-    size_t left_border_;
-    size_t height_;
+//    std::vector<std::vector<symbol>> map;
+    int32_t left_border_;
+    uint32_t length_;
+    uint32_t height_;
 
     actor player;
 
@@ -17,16 +18,15 @@ class Level {
     size_t talking_with;
 public:
     Level(FILE *level_file) : left_border_{0}, current{state::running} {
-        uint32_t length{0};
-        std::fread(&length, sizeof(uint32_t), 1, level_file);
+        std::fread(&length_, sizeof(uint32_t), 1, level_file);
         std::fread(&height_, sizeof(uint32_t), 1, level_file);
 
-        for (size_t i = 0; i < height_; i++) {
-            map.emplace_back();
-            for (size_t j = 0; j < length; j++) {
-                map[i].emplace_back(level_file);
-            }
-        }
+//        for (size_t i = 0; i < height_; i++) {
+//            map.emplace_back();
+//            for (size_t j = 0; j < length; j++) {
+//                map[i].emplace_back(level_file);
+//            }
+//        }
 
 
         uint32_t amount{0};
@@ -35,7 +35,6 @@ public:
         for (size_t i = 0; i < amount; i++) {
             npc.emplace_back(level_file);
         }
-
         tick();
     }
 
@@ -53,10 +52,10 @@ public:
 
             }
             if (act == actions::right) {
-                if (player.right_border() == map.front().size()) {
+                if (player.right_border() == length_) {
                     return;
                 }
-                if (right_border() == map.front().size() ||
+                if (right_border() == length_ ||
                     right_border() - player.right_border() > 20) {
                     player++;
                 } else {
@@ -82,16 +81,16 @@ public:
     }
 
     void tick() {
-        for (size_t i = 0; i < height_; i++) {
-            for (size_t j = left_border(); j < right_border(); j++) {
-                map[height_ - i - 1][j].print();
+        for (size_t i = 0; i < getmaxx(stdscr); i++) {
+            for (size_t j = 0; j < height_; j++) {
+                symbol(0, 0, '#', road).print(i, j);
             }
         }
 
         std::mt19937 engine{static_cast<uint32_t>(time(nullptr))};
-        for (size_t i = height_; i < getmaxy(stdscr); i++) {
-            for (size_t j = 0; j < getmaxx(stdscr); j++) {
-                uint32_t generated = engine() % 10;
+        for (size_t i = 0; i < getmaxx(stdscr); i++) {
+            for (size_t j = height_; j < getmaxy(stdscr); j++) {
+                uint32_t generated = engine() % 50;
                 if (generated) {
                     sky_block.print(i, j);
                 } else {

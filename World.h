@@ -21,8 +21,8 @@ public:
         init_pair(black_board, COLOR_WHITE, COLOR_BLACK);
         init_pair(road, COLOR_BLUE, COLOR_BLACK);
         init_pair(sky, COLOR_WHITE, COLOR_BLUE);
-        init_pair(leg_hand, COLOR_RED, COLOR_BLUE);
-        init_pair(body, COLOR_YELLOW, COLOR_BLUE);
+        init_pair(leg_hand, COLOR_BLACK, COLOR_BLUE);
+        init_pair(body, COLOR_BLACK, COLOR_BLUE);
         init_pair(head, COLOR_MAGENTA, COLOR_BLUE);
 
         uint32_t amount{0};
@@ -58,6 +58,7 @@ public:
                 levels[current_level].tick(actions::action);
             }
             refresh();
+
         }
     }
 
