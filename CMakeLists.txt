@@ -16,3 +16,5 @@ target_link_libraries(Quest Engine)
 add_custom_command(TARGET Quest PRE_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/levels/ $<TARGET_FILE_DIR:Quest>)
+
+#add_executable(Generate generate.cpp)

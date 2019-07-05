@@ -95,7 +95,7 @@ public:
         uint32_t size;
         std::fread(&size, sizeof(uint32_t), 1, data_file);
         for (size_t i = 0; i < size; i++) {
-            data_.push_back(symbol(data_file));
+            data_.emplace_back(data_file);
         }
     }
 
@@ -127,7 +127,7 @@ public:
         data_.emplace_back(5, 1, '/');
         data_.emplace_back(3, 2, ACS_URCORNER);
         data_.emplace_back(4, 2, ' ');
-        data_.emplace_back(5, 4, ACS_ULCORNER);
+        data_.emplace_back(5, 2, ACS_ULCORNER);
 
         data_.emplace_back(0, 2, ACS_LLCORNER);
         data_.emplace_back(0, height + 5, ACS_ULCORNER);
@@ -160,7 +160,23 @@ public:
         }
     }
 
-    dialog_window(FILE *data_file) : static_object(data_file) {}
+    dialog_window(FILE *data_file) {
+        uint32_t size;
+        std::fread(&size, sizeof(uint32_t), 1, data_file);
+
+        char tmp[128];
+        uint32_t length;
+
+        std::vector<std::string> lines;
+        lines.reserve(size);
+        for (uint32_t i = 0; i < size; i++) {
+            std::fread(&length, sizeof(uint32_t), 1, data_file);
+            std::fread(tmp, length, 1, data_file);
+            tmp[length] = '\0';
+            lines.emplace_back(tmp);
+        }
+        *this = dialog_window(lines);
+    }
 };
 
 
@@ -205,8 +221,6 @@ public:
             }
         }
     }
-
-    sign(FILE *data_file) : static_object(data_file) {}
 };
 
 struct npc_tag {
@@ -303,12 +317,12 @@ public:
         if (act == actions::action && !logic.empty()) {
             if (current_state == EOD) {
                 current_state = 0;
-                if (!logic[0].second.next.empty()) { logic[0].second.current = 0; }
             } else {
                 current_state = logic[current_state].second.next.empty() ?
                                 logic[current_state].second.current :
                                 logic[current_state].second.next[logic[current_state].second.current];
             }
+            if (!logic[current_state].second.next.empty()) { logic[current_state].second.current = 0; }
         }
         if (current_state == EOD) {
             return EOD;
