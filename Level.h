@@ -44,23 +44,19 @@ public:
                 if (player.left_border() == 0) {
                     return;
                 }
-                if (left_border() == 0 || player.left_border() - left_border() > 20) {
-                    player--;
-                } else {
+                if (left_border() > 0 && player.left_border() - left_border() < 20) {
                     left_border_--;
                 }
-
+                player--;
             }
             if (act == actions::right) {
                 if (player.right_border() == length_) {
                     return;
                 }
-                if (right_border() == length_ ||
-                    right_border() - player.right_border() > 20) {
-                    player++;
-                } else {
+                if (right_border() < length_ && right_border() - player.right_border() < 20) {
                     left_border_++;
                 }
+                player++;
             }
             if (act == actions::action) {
                 for (size_t i = 0; i < npc.size(); i++) {
